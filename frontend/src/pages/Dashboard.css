@@ -1,0 +1,248 @@
+.dashboard {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding-bottom: 20px;
+}
+
+.dashboard-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 30px 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.header-content {
+  max-width: 1200px;
+  margin: 0 auto 20px;
+}
+
+.header-content h1 {
+  margin: 0 0 5px 0;
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.header-content p {
+  margin: 0;
+  opacity: 0.9;
+  font-size: 16px;
+}
+
+.header-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.stat-card {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 15px;
+  border-radius: 8px;
+  text-align: center;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.stat-card.critical {
+  border-color: #ff6b6b;
+}
+
+.stat-card.high {
+  border-color: #ffa500;
+}
+
+.stat-number {
+  display: block;
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.stat-label {
+  display: block;
+  font-size: 12px;
+  opacity: 0.9;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.alert {
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 15px 20px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 500;
+}
+
+.alert-error {
+  background-color: #ffebee;
+  color: #d32f2f;
+  border-left: 4px solid #d32f2f;
+}
+
+.alert button {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.tabs {
+  display: flex;
+  gap: 10px;
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 0 20px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.tab {
+  padding: 12px 20px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  color: #666;
+  transition: all 0.3s;
+}
+
+.tab:hover {
+  color: #333;
+}
+
+.tab.active {
+  color: #667eea;
+  border-bottom-color: #667eea;
+}
+
+.tab-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Seção do Mapa */
+.mapa-section {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.filters select {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  background: white;
+  cursor: pointer;
+}
+
+.filters select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.mapa-container {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  min-height: 600px;
+}
+
+.map-area {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.details-area {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Seção de Novo Rumor */
+.novo-section {
+  max-width: 600px;
+  margin: 20px auto;
+}
+
+/* Seção de Palavras-chave */
+.palavras-section {
+  margin: 20px 0;
+}
+
+/* Responsividade */
+@media (max-width: 900px) {
+  .header-stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .mapa-container {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .map-area {
+    min-height: 500px;
+  }
+}
+
+@media (max-width: 600px) {
+  .dashboard-header {
+    padding: 20px 15px;
+  }
+
+  .header-content h1 {
+    font-size: 24px;
+  }
+
+  .header-content p {
+    font-size: 14px;
+  }
+
+  .header-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .tabs {
+    grid-template-columns: 1fr;
+    flex-wrap: wrap;
+    margin: 15px auto;
+    padding: 0 15px;
+    border-bottom: none;
+  }
+
+  .tab {
+    border-bottom: 2px solid #eee;
+    width: 100%;
+  }
+
+  .tab.active {
+    border-bottom: 2px solid #667eea;
+  }
+
+  .tab-content {
+    padding: 0 15px;
+  }
+
+  .mapa-container {
+    min-height: 400px;
+  }
+}

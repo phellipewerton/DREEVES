@@ -17,31 +17,27 @@ class RumorService {
       const text = `${title} ${description || ''}`;
       const riskAnalysis = await riskService.calculateRiskScore(text);
 
-      await database.run(
-        `INSERT INTO rumors (id, title, description, latitude, longitude, location_name, risk_level, risk_score, keywords_found, source, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          id,
-          title,
-          description || null,
-          latitude,
-          longitude,
-          location_name || 'Desconhecida',
-          riskAnalysis.level,
-          riskAnalysis.score,
-          JSON.stringify(riskAnalysis.foundKeywords),
-          source || 'Anônimo',
-          'PENDENTE'
-        ]
-      );
-
-      return {
+      const rumor = {
         id,
-        ...rumorData,
+        title,
+        description: description || null,
+        latitude,
+        longitude,
+        location_name: location_name || 'Desconhecida',
         risk_level: riskAnalysis.level,
         risk_score: riskAnalysis.score,
-        keywords_found: riskAnalysis.foundKeywords,
-        status: 'PENDENTE'
+        keywords_found: JSON.stringify(riskAnalysis.foundKeywords),
+        source: source || 'Anônimo',
+        status: 'PENDENTE',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      database.addRumor(rumor);
+
+      return {
+        ...rumor,
+        keywords_found: riskAnalysis.foundKeywords
       };
     } catch (error) {
       console.error('Erro ao criar rumor:', error);
@@ -56,23 +52,16 @@ class RumorService {
    */
   async getAllRumors(filters = {}) {
     try {
-      let query = 'SELECT * FROM rumors WHERE 1=1';
-      const params = [];
+      let rumors = database.getRumors();
 
       if (filters.risk_level) {
-        query += ' AND risk_level = ?';
-        params.push(filters.risk_level);
+        rumors = rumors.filter(r => r.risk_level === filters.risk_level);
       }
 
       if (filters.status) {
-        query += ' AND status = ?';
-        params.push(filters.status);
+        rumors = rumors.filter(r => r.status === filters.status);
       }
 
-      query += ' ORDER BY created_at DESC';
-
-      const rumors = await database.all(query, params);
-      
       // Parsear keywords_found
       return rumors.map(rumor => ({
         ...rumor,

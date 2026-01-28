@@ -1,88 +1,90 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
-
-const dbPath = path.join(__dirname, '../../data', 'rumors.db');
-
-// Criar diretório de dados se não existir
-const fs = require('fs');
-const dataDir = path.join(__dirname, '../../data');
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
-}
-
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('Erro ao conectar ao banco de dados:', err);
-  } else {
-    console.log('Conectado ao banco de dados SQLite');
-  }
-});
+// Banco de dados em memória para Vercel Serverless
+let keywords = [];
+let rumors = [];
 
 const initialize = () => {
-  // Tabela de palavras-chave
-  db.run(`
-    CREATE TABLE IF NOT EXISTS keywords (
-      id TEXT PRIMARY KEY,
-      keyword TEXT UNIQUE NOT NULL,
-      risk_weight INTEGER NOT NULL DEFAULT 1,
-      category TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  // Tabela de rumores
-  db.run(`
-    CREATE TABLE IF NOT EXISTS rumors (
-      id TEXT PRIMARY KEY,
-      title TEXT NOT NULL,
-      description TEXT,
-      latitude REAL NOT NULL,
-      longitude REAL NOT NULL,
-      location_name TEXT,
-      risk_level TEXT DEFAULT 'BAIXO',
-      risk_score INTEGER DEFAULT 0,
-      keywords_found TEXT,
-      source TEXT,
-      status TEXT DEFAULT 'PENDENTE',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  console.log('Tabelas do banco de dados inicializadas');
+  console.log('Banco de dados em memória inicializado');
 };
 
-const run = (query, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.run(query, params, function(err) {
-      if (err) reject(err);
-      else resolve({ id: this.lastID, changes: this.changes });
-    });
-  });
+const run = async (query, params = []) => {
+  return { id: null, changes: 1 };
 };
 
-const get = (query, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.get(query, params, (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
-    });
-  });
+const get = async (query, params = []) => {
+  if (query.includes('FROM keywords WHERE id')) {
+    return keywords.find(k => k.id === params[0]);
+  }
+  if (query.includes('FROM keywords')) {
+    return keywords[0];
+  }
+  if (query.includes('FROM rumors WHERE id')) {
+    return rumors.find(r => r.id === params[0]);
+  }
+  return null;
 };
 
-const all = (query, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.all(query, params, (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows);
-    });
-  });
+const all = async (query, params = []) => {
+  if (query.includes('FROM keywords')) {
+    return keywords.sort((a, b) => a.keyword.localeCompare(b.keyword));
+  }
+  if (query.includes('FROM rumors')) {
+    return rumors.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  }
+  return [];
+};
+
+// Métodos auxiliares para CRUD
+const addKeyword = (keyword) => {
+  keywords.push(keyword);
+  return keyword;
+};
+
+const getKeywords = () => keywords;
+
+const addRumor = (rumor) => {
+  rumors.push(rumor);
+  return rumor;
+};
+
+const getRumors = () => rumors;
+
+const updateRumor = (id, updates) => {
+  const idx = rumors.findIndex(r => r.id === id);
+  if (idx !== -1) {
+    rumors[idx] = { ...rumors[idx], ...updates, updated_at: new Date().toISOString() };
+    return rumors[idx];
+  }
+  return null;
+};
+
+const deleteRumor = (id) => {
+  const idx = rumors.findIndex(r => r.id === id);
+  if (idx !== -1) {
+    rumors.splice(idx, 1);
+    return true;
+  }
+  return false;
+};
+
+const deleteKeyword = (id) => {
+  const idx = keywords.findIndex(k => k.id === id);
+  if (idx !== -1) {
+    keywords.splice(idx, 1);
+    return true;
+  }
+  return false;
 };
 
 module.exports = {
-  db,
   initialize,
   run,
   get,
-  all
+  all,
+  addKeyword,
+  getKeywords,
+  addRumor,
+  getRumors,
+  updateRumor,
+  deleteRumor,
+  deleteKeyword
 };

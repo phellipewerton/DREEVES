@@ -27,6 +27,11 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Sistema de detecção de rumores operacional' });
 });
 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
-});
+// Para desenvolvimento local
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`Servidor rodando em http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;

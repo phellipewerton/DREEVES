@@ -27,8 +27,12 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Sistema de detecção de rumores operacional' });
 });
 
-// Para desenvolvimento local
-if (process.env.NODE_ENV !== 'production') {
+app.get('/', (req, res) => {
+  res.json({ message: 'Sistema DREEVES - Detecção de Rumores' });
+});
+
+// Para desenvolvimento local APENAS
+if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`Servidor rodando em http://localhost:${PORT}`);
   });

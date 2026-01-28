@@ -8,9 +8,7 @@ class RiskService {
    */
   async calculateRiskScore(text) {
     try {
-      const keywords = await database.all(
-        'SELECT * FROM keywords ORDER BY risk_weight DESC'
-      );
+      const keywords = database.getKeywords();
 
       let totalScore = 0;
       const foundKeywords = [];
@@ -66,10 +64,8 @@ class RiskService {
    */
   async analyzeRumor(rumorId) {
     try {
-      const rumor = await database.get(
-        'SELECT * FROM rumors WHERE id = ?',
-        [rumorId]
-      );
+      const rumors = database.getRumors();
+      const rumor = rumors.find(r => r.id === rumorId);
 
       if (!rumor) {
         throw new Error('Rumor não encontrado');
@@ -96,23 +92,26 @@ class RiskService {
    */
   async getRiskStatistics() {
     try {
-      const stats = await database.get(`
-        SELECT 
-          COUNT(*) as total_rumors,
-          SUM(CASE WHEN risk_level = 'CRÍTICO' THEN 1 ELSE 0 END) as critical,
-          SUM(CASE WHEN risk_level = 'ALTO' THEN 1 ELSE 0 END) as high,
-          SUM(CASE WHEN risk_level = 'MÉDIO' THEN 1 ELSE 0 END) as medium,
-          SUM(CASE WHEN risk_level = 'BAIXO' THEN 1 ELSE 0 END) as low,
-          SUM(CASE WHEN risk_level = 'NENHUM' THEN 1 ELSE 0 END) as none
-        FROM rumors
-      `);
+      const rumors = database.getRumors();
+      const keywords = database.getKeywords();
 
-      const topKeywords = await database.all(`
-        SELECT keyword, risk_weight, category
-        FROM keywords
-        ORDER BY risk_weight DESC
-        LIMIT 10
-      `);
+      const stats = {
+        total_rumors: rumors.length,
+        critical: rumors.filter(r => r.risk_level === 'CRÍTICO').length,
+        high: rumors.filter(r => r.risk_level === 'ALTO').length,
+        medium: rumors.filter(r => r.risk_level === 'MÉDIO').length,
+        low: rumors.filter(r => r.risk_level === 'BAIXO').length,
+        none: rumors.filter(r => r.risk_level === 'NENHUM').length
+      };
+
+      const topKeywords = keywords
+        .sort((a, b) => b.risk_weight - a.risk_weight)
+        .slice(0, 10)
+        .map(k => ({
+          keyword: k.keyword,
+          risk_weight: k.risk_weight,
+          category: k.category
+        }));
 
       return {
         statistics: stats,

@@ -12,22 +12,16 @@ class KeywordService {
       const id = uuidv4();
       const { keyword, risk_weight = 1, category = 'Geral' } = keywordData;
 
-      await database.run(
-        `INSERT INTO keywords (id, keyword, risk_weight, category)
-         VALUES (?, ?, ?, ?)`,
-        [id, keyword.toLowerCase(), risk_weight, category]
-      );
-
-      return {
+      const keywordObj = {
         id,
         keyword: keyword.toLowerCase(),
-        risk_weight,
-        category
+        risk_weight: parseInt(risk_weight) || 1,
+        category: category || 'Geral'
       };
+
+      database.addKeyword(keywordObj);
+      return keywordObj;
     } catch (error) {
-      if (error.message.includes('UNIQUE constraint failed')) {
-        throw new Error('Esta palavra-chave já existe');
-      }
       console.error('Erro ao adicionar palavra-chave:', error);
       throw error;
     }
@@ -39,10 +33,13 @@ class KeywordService {
    */
   async getAllKeywords() {
     try {
-      const keywords = await database.all(
-        'SELECT * FROM keywords ORDER BY category, keyword ASC'
-      );
-      return keywords;
+      const keywords = database.getKeywords();
+      return keywords.sort((a, b) => {
+        if (a.category !== b.category) {
+          return a.category.localeCompare(b.category);
+        }
+        return a.keyword.localeCompare(b.keyword);
+      });
     } catch (error) {
       console.error('Erro ao obter palavras-chave:', error);
       throw error;
@@ -56,11 +53,10 @@ class KeywordService {
    */
   async getKeywordsByCategory(category) {
     try {
-      const keywords = await database.all(
-        'SELECT * FROM keywords WHERE category = ? ORDER BY risk_weight DESC',
-        [category]
-      );
-      return keywords;
+      const keywords = database.getKeywords();
+      return keywords
+        .filter(k => k.category === category)
+        .sort((a, b) => b.risk_weight - a.risk_weight);
     } catch (error) {
       console.error('Erro ao obter palavras-chave por categoria:', error);
       throw error;
@@ -75,12 +71,11 @@ class KeywordService {
    */
   async updateKeywordWeight(id, risk_weight) {
     try {
-      await database.run(
-        'UPDATE keywords SET risk_weight = ? WHERE id = ?',
-        [risk_weight, id]
-      );
-
-      return database.get('SELECT * FROM keywords WHERE id = ?', [id]);
+      const updated = database.updateKeyword(id, { risk_weight: parseInt(risk_weight) || 1 });
+      if (!updated) {
+        throw new Error('Palavra-chave não encontrada');
+      }
+      return updated;
     } catch (error) {
       console.error('Erro ao atualizar peso da palavra-chave:', error);
       throw error;
@@ -94,7 +89,10 @@ class KeywordService {
    */
   async deleteKeyword(id) {
     try {
-      await database.run('DELETE FROM keywords WHERE id = ?', [id]);
+      const deleted = database.deleteKeyword(id);
+      if (!deleted) {
+        throw new Error('Palavra-chave não encontrada');
+      }
     } catch (error) {
       console.error('Erro ao deletar palavra-chave:', error);
       throw error;
@@ -131,24 +129,44 @@ class KeywordService {
    */
   async getKeywordStatistics() {
     try {
-      const stats = await database.get(`
-        SELECT 
-          COUNT(*) as total_keywords,
-          COUNT(DISTINCT category) as total_categories,
-          AVG(risk_weight) as average_weight,
-          MAX(risk_weight) as max_weight
-        FROM keywords
-      `);
+      const allKeywords = database.getKeywords();
+      
+      if (allKeywords.length === 0) {
+        return {
+          general: {
+            total_keywords: 0,
+            total_categories: 0,
+            average_weight: 0,
+            max_weight: 0
+          },
+          byCategory: []
+        };
+      }
 
-      const byCategory = await database.all(`
-        SELECT category, COUNT(*) as count
-        FROM keywords
-        GROUP BY category
-        ORDER BY count DESC
-      `);
+      const categories = {};
+      let totalWeight = 0;
+      let maxWeight = 0;
+
+      for (const kw of allKeywords) {
+        totalWeight += kw.risk_weight;
+        if (kw.risk_weight > maxWeight) maxWeight = kw.risk_weight;
+        if (!categories[kw.category]) {
+          categories[kw.category] = 0;
+        }
+        categories[kw.category]++;
+      }
+
+      const byCategory = Object.entries(categories)
+        .map(([category, count]) => ({ category, count }))
+        .sort((a, b) => b.count - a.count);
 
       return {
-        general: stats,
+        general: {
+          total_keywords: allKeywords.length,
+          total_categories: Object.keys(categories).length,
+          average_weight: Math.round(totalWeight / allKeywords.length),
+          max_weight: maxWeight
+        },
         byCategory
       };
     } catch (error) {

@@ -80,10 +80,8 @@ class RumorService {
    */
   async getRumorById(id) {
     try {
-      const rumor = await database.get(
-        'SELECT * FROM rumors WHERE id = ?',
-        [id]
-      );
+      const rumors = database.getRumors();
+      const rumor = rumors.find(r => r.id === id);
 
       if (!rumor) {
         throw new Error('Rumor não encontrado');
@@ -107,12 +105,19 @@ class RumorService {
    */
   async updateRumorStatus(id, status) {
     try {
-      await database.run(
-        'UPDATE rumors SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [status, id]
-      );
+      const updated = database.updateRumor(id, { 
+        status,
+        updated_at: new Date().toISOString()
+      });
 
-      return this.getRumorById(id);
+      if (!updated) {
+        throw new Error('Rumor não encontrado');
+      }
+
+      return {
+        ...updated,
+        keywords_found: updated.keywords_found ? JSON.parse(updated.keywords_found) : []
+      };
     } catch (error) {
       console.error('Erro ao atualizar status do rumor:', error);
       throw error;
@@ -126,7 +131,10 @@ class RumorService {
    */
   async deleteRumor(id) {
     try {
-      await database.run('DELETE FROM rumors WHERE id = ?', [id]);
+      const deleted = database.deleteRumor(id);
+      if (!deleted) {
+        throw new Error('Rumor não encontrado');
+      }
     } catch (error) {
       console.error('Erro ao deletar rumor:', error);
       throw error;
@@ -142,24 +150,16 @@ class RumorService {
    */
   async getRumorsByArea(latitude, longitude, radius = 10) {
     try {
-      // Cálculo aproximado: 1 grau ≈ 111 km
       const latOffset = radius / 111;
       const lonOffset = radius / (111 * Math.cos(latitude * Math.PI / 180));
 
-      const rumors = await database.all(
-        `SELECT * FROM rumors 
-         WHERE latitude BETWEEN ? AND ? 
-         AND longitude BETWEEN ? AND ? 
-         ORDER BY created_at DESC`,
-        [
-          latitude - latOffset,
-          latitude + latOffset,
-          longitude - lonOffset,
-          longitude + lonOffset
-        ]
+      const rumors = database.getRumors();
+      const filtered = rumors.filter(rumor => 
+        Math.abs(rumor.latitude - latitude) <= latOffset &&
+        Math.abs(rumor.longitude - longitude) <= lonOffset
       );
 
-      return rumors.map(rumor => ({
+      return filtered.map(rumor => ({
         ...rumor,
         keywords_found: rumor.keywords_found ? JSON.parse(rumor.keywords_found) : []
       }));

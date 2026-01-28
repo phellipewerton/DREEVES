@@ -75,6 +75,15 @@ const deleteKeyword = (id) => {
   return false;
 };
 
+const updateKeyword = (id, updates) => {
+  const idx = keywords.findIndex(k => k.id === id);
+  if (idx !== -1) {
+    keywords[idx] = { ...keywords[idx], ...updates };
+    return keywords[idx];
+  }
+  return null;
+};
+
 module.exports = {
   initialize,
   run,
@@ -82,6 +91,7 @@ module.exports = {
   all,
   addKeyword,
   getKeywords,
+  updateKeyword,
   addRumor,
   getRumors,
   updateRumor,
